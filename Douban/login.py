@@ -12,7 +12,7 @@ try:
     from PIL import Image
 except:
     pass
-
+import mywordCloud
 
 # 构造 Request headers
 agent = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
@@ -69,6 +69,10 @@ def login(acount,secret):
     htmlcha=session.get(douban,headers=headers).text
     patterncha=r'id="captcha_image" src="(.*?)" alt="captcha"'
     httpcha=re.findall(patterncha,htmlcha)
+    pattern2=r'type="hidden" name="captcha-id" value="(.*?)"'
+    hidden_value=re.findall(pattern2,htmlcha)
+    print(hidden_value)
+
     post_data = {
         "source": "index_nav",
         'form_email': acount,
@@ -78,21 +82,19 @@ def login(acount,secret):
         print('验证码连接',httpcha)
         capcha=get_captcha(httpcha[0])
         post_data['captcha-solution']=capcha
+        post_data['captcha-id']=hidden_value[0]
 
     print (post_data)
     post_url='https://www.douban.com/accounts/login'
     login_page=session.post(post_url,data=post_data,headers=headers)
-    login_code=login_page.status_code
-    if login_code== 200:
+    #保存cookies
+    session.cookies.save()
+
+    if isLogin():
         print('登录成功')
-        #print(login_page.text)
     else:
         print('登录失败')
 
-    #保存成绩
-    session.cookies.save()
-    if isLogin():
-        print('登录成功2')
 
 def get_movie_sort():
     time.sleep(1)
@@ -101,10 +103,29 @@ def get_movie_sort():
     soup=BeautifulSoup(html.text,'html.parser')
     result=soup.find_all('a',{'class':'nbg'})
     print(result)
+
+#爬取短评论
+def get_comment(filename):  #filename为爬取得内容保存的文件
+    while(True):
+        time.sleep(1)
+        comment_url='https://movie.douban.com/subject/26363254/comments'
+        data={
+            'start':'27',
+            'limit':'-20',
+            'sort':'new_score',
+            'status':'P'
+
+        }
+        html=session.post(url=comment_url,headers=headers,data=data)
+        print(html.text)
+        soup=BeautifulSoup(html.text,'html.parser')
+        result=soup.find_all('div',{'class':'comment'})
+        print(result)
+        break
+
 if __name__=='__main__':
     if isLogin():
         print('您已经登录')
     else:
-        login('2384172887@qq.com','w1155435642')
-
-    get_movie_sort()
+        login('2384@qq.com','43asasc2')
+    #get_movie_sort()
